@@ -6,7 +6,11 @@
 #                                                 no questions (scripts, agents)
 # Options:
 #   --invite CODE     mainnet invite code (mainnet is invite-gated; ask an existing user)
-#   --restore         use an existing 24-word seed instead of creating a new wallet
+#   --restore         use your existing wallet: type its 12/24-word seed (hidden)
+#   --seed-file FILE  the same, with the seed words read from FILE (scripts, agents)
+#   --env-file FILE   take over an existing node .env (MNEMONIC + PASSWORD) as it is,
+#                     e.g. from another server — keeps the same identity
+#   (an already admitted wallet needs no invite; never run one wallet on two nodes at once)
 #   --show-seed       print the new recovery phrase once (default: only saved to node/.env)
 #   --budget N --preset P --markets A,B --telegram-chat ID --yes
 #                     passed to `hydra-mm setup` (the Telegram bot token via env:
@@ -14,15 +18,17 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-INVITE=""; RESTORE=0; SHOW=""; SETUP=()
+INVITE=""; RESTORE=0; SEED_FILE=""; ENV_FILE=""; SHOW=""; SETUP=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --invite) INVITE="$2"; shift 2 ;;
     --restore) RESTORE=1; shift ;;
+    --seed-file) SEED_FILE="$2"; RESTORE=1; shift 2 ;;
+    --env-file) ENV_FILE="$2"; RESTORE=1; shift 2 ;;
     --show-seed) SHOW="--show"; shift ;;
     --budget|--preset|--markets|--telegram-chat) SETUP+=("$1" "$2"); shift 2 ;;
     --yes) SETUP+=("$1"); shift ;;
-    -h|--help) sed -n 2,16p "$0"; exit 0 ;;
+    -h|--help) sed -n 2,20p "$0"; exit 0 ;;
     *) echo "unknown option $1 (see --help)"; exit 2 ;;
   esac
 done
@@ -45,11 +51,39 @@ docker compose build -q bot
 say "3/5  Wallet"
 if [ -s node/.env ] && grep -q '^MNEMONIC=.' node/.env; then
   echo "node/.env already holds a wallet — kept"
+  [ "$RESTORE" = 1 ] && echo "  (not replaced by the wallet you passed — to switch wallets see the README: 'Already have an admitted wallet?')"
 elif [ "$RESTORE" = 1 ]; then
-  read -rsp "Your 24 seed words (hidden): " WORDS; echo   # no password: see write_node_env
-  docker compose run --rm --no-deps -T -e WORDS="$WORDS" -v "$PWD/node:/node" bot \
-    python3 -c "import os; from lib.easy_ops import write_node_env; write_node_env('/node/.env', os.environ['WORDS']); print('saved node/.env')"
-  unset WORDS
+  echo "Using your existing wallet. Run it on THIS node only: stop the Hydra web app or any other node"
+  echo "with the same seed first — two nodes with one wallet can lose funds (their channel states clash)."
+  if [ -n "$ENV_FILE" ]; then
+    [ -r "$ENV_FILE" ] || { echo "Can't read $ENV_FILE"; exit 1; }
+    SRC="$(cd "$(dirname "$ENV_FILE")" && pwd)/$(basename "$ENV_FILE")"
+    docker compose run --rm --no-deps -T -v "$PWD/node:/node" -v "$SRC:/import.env:ro" bot python3 -c "
+import sys
+from lib.easy_ops import read_node_env, write_node_env
+try:
+    words, password = read_node_env('/import.env')
+    write_node_env('/node/.env', words, password)
+except (ValueError, FileExistsError) as e:
+    sys.exit(f'Not imported: {e}')
+print('imported the wallet (seed + password) into node/.env')" || exit 1
+  else
+    if [ -n "$SEED_FILE" ]; then
+      [ -r "$SEED_FILE" ] || { echo "Can't read $SEED_FILE"; exit 1; }
+      WORDS="$(tr '\n' ' ' < "$SEED_FILE")"
+    else
+      read -rsp "Your 12 or 24 seed words (hidden): " WORDS; echo   # no password: see write_node_env
+    fi
+    docker compose run --rm --no-deps -T -e WORDS="$WORDS" -v "$PWD/node:/node" bot python3 -c "
+import os, sys
+from lib.easy_ops import write_node_env
+try:
+    write_node_env('/node/.env', os.environ['WORDS'])
+except (ValueError, FileExistsError) as e:
+    sys.exit(f'Not saved: {e}')
+print('saved node/.env')" || { unset WORDS; exit 1; }
+    unset WORDS
+  fi
 else
   docker compose run --rm --no-deps -T -v "$PWD/node:/node" bot python3 tools/hydra_mm.py new-seed --out /node/.env $SHOW
   echo "IMPORTANT: back up node/.env (the MNEMONIC line) somewhere offline."
@@ -79,8 +113,12 @@ if docker compose exec -T bot python3 -c "import sys; from lib.easy_ops import w
     echo "Identity key: ${ID:-?}"
     echo "The node is waiting. Redeem an invite code (an existing user mints one):  ./hydra-mm invite <CODE>"
     echo "or ask the Hydranet team to whitelist the identity key above. Then: ./hydra-mm doctor"
+    echo "Already admitted with another wallet? See the README: 'Already have an admitted wallet?'"
     exit 3
   fi
+else
+  echo "✅ This wallet is admitted to mainnet — no invite needed."
+  [ -z "$INVITE" ] || echo "   (the invite code you passed was not used — keep it for someone else)"
 fi
 
 say "5/5  Setup"

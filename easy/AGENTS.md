@@ -14,7 +14,9 @@ always tells you the next one.
 3. **Ask before anything that moves money**: `./hydra-mm fund --go` (opens channels,
    pays lease fees). Show the human the plan and the fee first (`./hydra-mm fund`
    without `--go` prints both).
-4. **Invite codes are bearer secrets**: use it once, don't echo it back.
+4. **Invite codes are bearer secrets**: use it once, don't echo it back. If the human's wallet
+   is already admitted, install with it instead (`--seed-file` / `--env-file`, from a file THEY
+   prepare — never ask them to paste the seed into the chat); no invite is needed then.
 5. Keep the node API private: never publish port 5003 or change the compose file's
    networking. Never run `docker compose down -v` (it deletes the wallet).
 6. If a step fails twice the same way, stop and show the human the output.

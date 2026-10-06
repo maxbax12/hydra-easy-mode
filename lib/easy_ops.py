@@ -149,19 +149,46 @@ def new_seed(words: int = 24) -> str:
     return Mnemonic("english").generate(strength={12: 128, 24: 256}[words])
 
 
+def check_seed(mnemonic: str) -> str:
+    """The recovery phrase normalised (lower case, single spaces), or ValueError saying
+    what is wrong — word count, an unknown word, or a typo the BIP-39 checksum catches."""
+    from mnemonic import Mnemonic
+    words = mnemonic.lower().split()
+    if len(words) not in (12, 24):
+        raise ValueError(f"a recovery phrase has 12 or 24 words, this one has {len(words)}")
+    m = Mnemonic("english")
+    unknown = [i + 1 for i, w in enumerate(words) if w not in m.wordlist]
+    if unknown:
+        raise ValueError(f"word {', '.join(map(str, unknown))} is not a recovery-phrase word (typo?)")
+    if not m.check(" ".join(words)):
+        raise ValueError("the words don't add up (checksum) — a word is wrong or in the wrong place")
+    return " ".join(words)
+
+
+def read_node_env(path: str) -> Tuple[str, str]:
+    """(MNEMONIC, PASSWORD) from an existing node .env — another easy install or a node of yours."""
+    vals = {}
+    for line in open(path):
+        k, sep, v = line.strip().partition("=")
+        if sep and k in ("MNEMONIC", "PASSWORD"):
+            vals[k] = v.strip().strip('"').strip("'")
+    if not vals.get("MNEMONIC"):
+        raise ValueError(f"{path} has no MNEMONIC= line")
+    return check_seed(vals["MNEMONIC"]), vals.get("PASSWORD", "")
+
+
 def write_node_env(path: str, mnemonic: str, password: str = "") -> str:
     """node/.env for daemon mode (MNEMONIC + PASSWORD, 0600). Refuses to overwrite a wallet.
 
     PASSWORD stays EMPTY by default: the node derives its identity from the seed AND
     the password, and the Hydra web app (where invites are redeemed) has no password —
-    with one set, the node's identity would differ from the admitted one."""
+    with one set, the node's identity would differ from the admitted one. An imported
+    node .env keeps its PASSWORD, so the identity stays the same."""
     if os.path.exists(path) and "MNEMONIC=" in open(path).read() and \
             open(path).read().split("MNEMONIC=", 1)[1].split("\n", 1)[0].strip():
         raise FileExistsError(f"{path} already holds a wallet seed — not overwriting it")
-    words = mnemonic.split()
-    if len(words) not in (12, 24):
-        raise ValueError("a recovery phrase has 12 or 24 words")
-    set_env(path, {"MNEMONIC": " ".join(words), "RUST_LOG": "info"})
+    words = check_seed(mnemonic)
+    set_env(path, {"MNEMONIC": words, "RUST_LOG": "info"})
     with open(path, "a") as f:
         f.write(f"PASSWORD={password}\n")        # set_env drops empty values; keep the key
     return password

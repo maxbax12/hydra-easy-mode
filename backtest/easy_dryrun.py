@@ -93,6 +93,40 @@ E.set_env(env, {"API_KEY": "new", "B": "2"})
 check(".env: keys replaced, others kept, file 0600", open(env).read().splitlines() == ["A=1", "API_KEY=new", "B=2"]
       and oct(os.stat(env).st_mode & 0o777) == "0o600")
 
+print("\n2b. bringing your own wallet (already admitted: no invite needed)")
+seed = E.new_seed(24)
+check("a fresh seed passes the check (normalised: lower case, single spaces)",
+      E.check_seed("  " + seed.upper().replace(" ", "   ") + " ") == seed)
+VECTOR = " ".join(["abandon"] * 23 + ["art"])          # BIP-39 test vector (valid)
+check("the BIP-39 test vector passes", E.check_seed(VECTOR) == VECTOR)
+for bad, why in ((seed.rsplit(" ", 1)[0], "24 words"), (seed.replace(seed.split()[3], "notaword", 1), "word 4"),
+                 (" ".join(["abandon"] * 24), "checksum")):
+    try:
+        E.check_seed(bad); msg = "accepted"
+    except ValueError as e:
+        msg = str(e)
+    check(f"bad seed refused with a reason ({why})", why in msg or ("12 or 24" in msg and why == "24 words"), msg)
+d = tempfile.mkdtemp()
+src = os.path.join(d, "old.env")
+open(src, "w").write(f"MNEMONIC={seed}\nPASSWORD=s3cret\nRUST_LOG=debug\n")
+words, pw = E.read_node_env(src)
+dst = os.path.join(d, "node.env")
+E.write_node_env(dst, words, pw)
+lines = open(dst).read().splitlines()
+check("an imported node .env keeps its PASSWORD (same identity), file 0600",
+      f"MNEMONIC={seed}" in lines and "PASSWORD=s3cret" in lines and oct(os.stat(dst).st_mode & 0o777) == "0o600")
+try:
+    E.write_node_env(dst, E.new_seed(24)); msg = "overwritten"
+except FileExistsError as e:
+    msg = str(e)
+check("an existing wallet is never overwritten", "not overwriting" in msg, msg)
+open(src, "w").write("RUST_LOG=info\n")
+try:
+    E.read_node_env(src); msg = "accepted"
+except ValueError as e:
+    msg = str(e)
+check("a .env without MNEMONIC is refused", "MNEMONIC" in msg, msg)
+
 print("\n3. channel requests (one OpenOrDeposit per chain)")
 reqs = E.channel_requests(p, PX, cap={}, hub={"bitcoin": "03ab", "ethereum": "0xhub", "arbitrum": "0xhub"})
 chains = {r["chain"]: r for r in reqs}

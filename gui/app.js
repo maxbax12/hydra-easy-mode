@@ -917,7 +917,8 @@
         h('p', { class: 'lead', text: st.node === 'invite'
           ? 'Your node is running. Hydra mainnet is invite-only: enter the invite code an existing Hydra user gave you, and your node joins within a few minutes.'
           : 'Your node is running but isn’t admitted to mainnet yet. Redeem an invite code, or ask the Hydra team to whitelist the identity below.' }),
-        form, err, jobBox, identity);
+        form, err, jobBox, identity,
+        h('p', { class: 'help', text: 'Already have an admitted wallet (e.g. from the Hydra web app)? Then you need no invite: before funding, reinstall with that wallet — ./install.sh --restore on the server (see the README, “Already have an admitted wallet?”). Run one wallet on one node only.' }));
       if (st.job && st.job.kind === 'invite') watchJob(st.job, jobBox, () => { S.sigs.node = null; loadSetup(true); });
       return;
     }

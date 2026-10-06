@@ -115,7 +115,9 @@ What `install.sh` does, step by step (it prints each one):
 | Option | Meaning |
 |---|---|
 | `--invite CODE` | redeem this mainnet invite code (without it the node waits; later: `./hydra-mm invite CODE`) |
-| `--restore` | type in an existing 24-word seed (hidden) instead of creating a new wallet |
+| `--restore` | use your existing wallet: type its 12/24-word seed (hidden) instead of creating a new one |
+| `--seed-file FILE` | the same, with the seed words read from a file (scripts, agents) |
+| `--env-file FILE` | take over an existing node `.env` as it is (seed **and** password — same identity), e.g. when moving to a new server |
 | `--show-seed` | print the new recovery phrase once on screen (default: only saved to `node/.env`) |
 | `--budget N --preset P --markets A,B --telegram-chat ID --yes` | answers for the setup — with `--yes` nothing is asked (scripts, agents) |
 
@@ -129,6 +131,31 @@ Example, no questions at all:
 ```
 
 Re-running `install.sh` is safe: it keeps an existing wallet and config.
+
+### Already have an admitted wallet?
+
+Mainnet admits a **wallet identity**, which comes from the seed (and the node password). If
+your wallet is already admitted — you redeemed an invite in the Hydra web app, or the team
+whitelisted it — install with that wallet and **no invite is needed**:
+
+```bash
+./install.sh --restore                    # type the seed words (hidden)
+./install.sh --seed-file ~/seed.txt       # or read them from a file
+./install.sh --env-file ~/old/node/.env   # or take over another node's .env (seed + password)
+```
+
+The installer checks the words (a typo is caught by the checksum), starts the node and prints
+**"This wallet is admitted to mainnet — no invite needed."** An invite code you passed anyway
+is not used up.
+
+- A public key alone is not enough: it only *names* the identity; the node needs the seed to
+  act as it.
+- **Run one wallet on one node only.** Stop the Hydra web app (or any other node with the same
+  seed) first — two nodes with one wallet can lose funds when their channel states clash.
+- Easy mode leaves the node password empty, like the web app, so a web-app seed keeps its
+  identity. `--env-file` keeps whatever password the old node used.
+- Already installed with a new wallet and want to switch? Only **before** funding it:
+  `docker compose down`, move `node/.env` and `node/data/` away, then `./install.sh --restore`.
 
 ## 2 — Setup
 
