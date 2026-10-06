@@ -1,0 +1,7 @@
+#!/bin/bash
+# Runs a hydra-mm command inside the bot container (see tools/hydra_mm.py).
+# Secrets for unattended setup are passed through from the environment, never as flags.
+cd "$(dirname "$0")"
+if [ -t 0 ] && [ -t 1 ]; then TTY=-it; else TTY=-T; fi
+exec docker compose exec $TTY -e ALERTS_TELEGRAM_BOT_TOKEN -e ALERTS_TELEGRAM_BOT_TOKEN_NEW -e HYDRA_INVITE_CODE \
+  bot python3 tools/hydra_mm.py "$@"

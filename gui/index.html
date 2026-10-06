@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Hydra market maker</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<!-- Icons (stroke icons on a 24 px grid). Used as <svg class="i"><use href="#i-name"/></svg>. -->
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5h4v5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-bars" viewBox="0 0 24 24"><path d="M6 20v-7M12 20V5M18 20v-10"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4.5L17 13H5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 21.5 20h-19z"/><path d="M12 10v4.5M12 17.5v.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5v.01"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="7" rx="2"/><rect x="3.5" y="13" width="17" height="7" rx="2"/><path d="M7.5 7.5h.01M7.5 16.5h.01"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 19.5 6v5.5c0 4.4-3.1 8.2-7.5 9.5-4.4-1.3-7.5-5.1-7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5 21 8.5l-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10.5 13.5"/><path d="M21 3 14.5 21l-4-7.5L3 9.5z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V5.5A1.5 1.5 0 0 0 17.5 4h-12A2.5 2.5 0 0 0 3 6.5v11A2.5 2.5 0 0 0 5.5 20H20a1 1 0 0 0 1-1v-3"/><path d="M21 8H6.5a1.5 1.5 0 0 1 0-3"/><path d="M21 12h-4a2 2 0 0 0 0 4h4z"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16.5 6.5l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.5 18a8.5 8.5 0 1 1 15 0"/><path d="m12 15 4-5"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6h4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="11" width="15" height="9.5" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#dashboard" id="brand" aria-label="Hydra market maker, home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M3 20c4 0 4-4 8-4s4 4 8 4 4-4 8-4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M3 26c4 0 4-4 8-4s4 4 8 4 4-4 8-4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" opacity=".45"/>
+        <circle cx="16" cy="8" r="4" fill="currentColor"/>
+      </svg>
+      <span class="brand-name">Hydra <span>market maker</span></span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main" hidden>
+      <button class="nav-item" type="button" data-tab="dashboard"><svg class="i"><use href="#i-home"/></svg><span>Dashboard</span></button>
+      <button class="nav-item" type="button" data-tab="controls"><svg class="i"><use href="#i-sliders"/></svg><span>Controls</span></button>
+      <button class="nav-item" type="button" data-tab="volume"><svg class="i"><use href="#i-bars"/></svg><span>Volume</span></button>
+      <button class="nav-item nav-setup" type="button" data-tab="setup"><svg class="i"><use href="#i-flag"/></svg><span id="nav-setup-label">Setup</span><span class="nav-dot" id="nav-dot" hidden></span></button>
+    </nav>
+    <span id="state-pill" class="pill pill-muted" role="status">Connecting</span>
+  </div>
+</header>
+
+<div id="banner" class="banner" role="status" hidden>
+  <div class="banner-inner">
+    <svg class="i"><use id="banner-icon" href="#i-alert"/></svg>
+    <p id="banner-text"></p>
+    <button id="banner-action" class="btn btn-sm" type="button"></button>
+  </div>
+</div>
+
+<main id="main" class="main">
+  <!-- ======================================================== locked -->
+  <section id="locked" class="locked" hidden>
+    <div class="empty-icon"><svg class="i i-lg"><use href="#i-lock"/></svg></div>
+    <h1>Open the panel with your access link</h1>
+    <p>On your server, in <code>~/hydra-mm/easy</code>, run <code>./hydra-mm gui</code>. It prints an SSH command and a link that ends in <code>#t=…</code>. Run the SSH command on your computer, keep it open, then open the link.</p>
+    <form id="unlock-form" class="unlock" autocomplete="off">
+      <div class="inline-form">
+        <div class="field">
+          <label for="unlock-key">Or paste the access key</label>
+          <input id="unlock-key" type="password" spellcheck="false" autocomplete="off" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Unlock</button>
+      </div>
+      <p id="unlock-error" class="callout callout-bad" hidden></p>
+    </form>
+  </section>
+
+  <!-- ======================================================== setup -->
+  <section id="tab-setup" class="view" hidden>
+    <div class="setup-hero">
+      <div>
+        <h1 id="setup-title" class="page-title">Get your market maker running</h1>
+        <p id="setup-sub" class="page-sub">Six short steps. Each one checks itself, so you always know what comes next.</p>
+      </div>
+      <div class="meter-box">
+        <div class="meter" role="progressbar" aria-label="Setup progress" aria-valuemin="0" aria-valuemax="6" id="setup-meter-bar"><span id="setup-meter"></span></div>
+        <div class="meter-text"><span>Progress</span><span id="setup-count"><b>0</b> of 6 done</span></div>
+      </div>
+    </div>
+
+    <ol class="stepper" id="stepper">
+      <li class="stage" id="stage-node" data-stage="node">
+        <span class="stage-marker"><svg class="i"><use href="#i-server"/></svg></span>
+        <div class="stage-card">
+          <button class="stage-head" type="button" aria-expanded="false" aria-controls="stage-node-body">
+            <span class="stage-heading"><span class="stage-title">Node and access</span><span class="stage-summary"></span></span>
+            <span class="stage-pill"></span><svg class="i chevron"><use href="#i-chevron"/></svg>
+          </button>
+          <div class="stage-body" id="stage-node-body" hidden></div>
+        </div>
+      </li>
+      <li class="stage" id="stage-backup" data-stage="backup">
+        <span class="stage-marker"><svg class="i"><use href="#i-shield"/></svg></span>
+        <div class="stage-card">
+          <button class="stage-head" type="button" aria-expanded="false" aria-controls="stage-backup-body">
+            <span class="stage-heading"><span class="stage-title">Back up your wallet</span><span class="stage-summary"></span></span>
+            <span class="stage-pill"></span><svg class="i chevron"><use href="#i-chevron"/></svg>
+          </button>
+          <div class="stage-body" id="stage-backup-body" hidden></div>
+        </div>
+      </li>
+      <li class="stage" id="stage-plan" data-stage="plan">
+        <span class="stage-marker"><svg class="i"><use href="#i-layers"/></svg></span>
+        <div class="stage-card">
+          <button class="stage-head" type="button" aria-expanded="false" aria-controls="stage-plan-body">
+            <span class="stage-heading"><span class="stage-title">Your plan</span><span class="stage-summary"></span></span>
+            <span class="stage-pill"></span><svg class="i chevron"><use href="#i-chevron"/></svg>
+          </button>
+          <div class="stage-body" id="stage-plan-body" hidden>
+            <p class="lead">Pick a budget, a style and the markets to trade. The preview updates as you go, and nothing changes until you save.</p>
+            <div class="plan-layout">
+              <form id="plan-form" class="plan-form" novalidate>
+                <div class="field">
+                  <label for="plan-budget">Budget</label>
+                  <div class="budget">
+                    <div class="money-input"><span>$</span><input id="plan-budget" type="number" inputmode="decimal" min="300" step="50" value="1000"></div>
+                    <div>
+                      <input id="plan-budget-range" type="range" min="300" max="25000" step="50" value="1000" aria-label="Budget slider">
+                      <div class="range-scale"><span>$300</span><span>$25,000+</span></div>
+                    </div>
+                  </div>
+                  <p class="help" id="plan-budget-help">All the money you want to put in. At least $300.</p>
+                </div>
+                <fieldset class="field">
+                  <legend>Style</legend>
+                  <div id="plan-presets" class="choice-grid choice-3"></div>
+                </fieldset>
+                <fieldset class="field">
+                  <legend>Markets</legend>
+                  <div id="plan-markets" class="choice-grid choice-2"></div>
+                </fieldset>
+              </form>
+              <aside id="plan-preview" class="preview" aria-live="polite"></aside>
+            </div>
+            <div class="stage-actions">
+              <button id="plan-save" class="btn btn-primary btn-lg" type="button" disabled>Save plan</button>
+              <span id="plan-save-hint" class="muted t-sm"></span>
+            </div>
+            <p id="plan-error" class="callout callout-bad" hidden></p>
+            <div id="plan-job"></div>
+          </div>
+        </div>
+      </li>
+      <li class="stage" id="stage-telegram" data-stage="telegram">
+        <span class="stage-marker"><svg class="i"><use href="#i-send"/></svg></span>
+        <div class="stage-card">
+          <button class="stage-head" type="button" aria-expanded="false" aria-controls="stage-telegram-body">
+            <span class="stage-heading"><span class="stage-title">Telegram alerts</span><span class="stage-summary"></span></span>
+            <span class="stage-pill"></span><svg class="i chevron"><use href="#i-chevron"/></svg>
+          </button>
+          <div class="stage-body" id="stage-telegram-body" hidden></div>
+        </div>
+      </li>
+      <li class="stage" id="stage-funding" data-stage="funding">
+        <span class="stage-marker"><svg class="i"><use href="#i-wallet"/></svg></span>
+        <div class="stage-card">
+          <button class="stage-head" type="button" aria-expanded="false" aria-controls="stage-funding-body">
+            <span class="stage-heading"><span class="stage-title">Fund your node</span><span class="stage-summary"></span></span>
+            <span class="stage-pill"></span><svg class="i chevron"><use href="#i-chevron"/></svg>
+          </button>
+          <div class="stage-body" id="stage-funding-body" hidden></div>
+        </div>
+      </li>
+      <li class="stage" id="stage-done" data-stage="done">
+        <span class="stage-marker"><svg class="i"><use href="#i-flag"/></svg></span>
+        <div class="stage-card">
+          <button class="stage-head" type="button" aria-expanded="false" aria-controls="stage-done-body">
+            <span class="stage-heading"><span class="stage-title">Start trading</span><span class="stage-summary"></span></span>
+            <span class="stage-pill"></span><svg class="i chevron"><use href="#i-chevron"/></svg>
+          </button>
+          <div class="stage-body" id="stage-done-body" hidden></div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ======================================================== dashboard -->
+  <section id="tab-dashboard" class="view" hidden>
+    <div class="page-head">
+      <div>
+        <h1 id="hero-title" class="page-title">Overview</h1>
+        <p id="hero-sub" class="page-sub">Loading…</p>
+      </div>
+      <div class="page-actions">
+        <span id="updated" class="muted t-sm"></span>
+        <button id="refresh" class="btn btn-sm" type="button"><svg class="i i-sm"><use href="#i-refresh"/></svg><span>Refresh</span></button>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <article class="kpi" id="kpi-pnl"><div class="kpi-label"><svg class="i i-sm"><use href="#i-trend"/></svg>Profit and loss</div><div class="kpi-value">–</div><div class="kpi-sub"></div></article>
+      <article class="kpi" id="kpi-markets"><div class="kpi-label"><svg class="i i-sm"><use href="#i-pulse"/></svg>Markets quoting</div><div class="kpi-value">–</div><div class="kpi-sub"></div></article>
+      <article class="kpi" id="kpi-capacity"><div class="kpi-label"><svg class="i i-sm"><use href="#i-gauge"/></svg>Capacity</div><div class="kpi-value">–</div><div class="kpi-sub"></div></article>
+      <article class="kpi" id="kpi-leases"><div class="kpi-label"><svg class="i i-sm"><use href="#i-clock"/></svg>Leases</div><div class="kpi-value">–</div><div class="kpi-sub"></div></article>
+    </div>
+
+    <div class="grid">
+      <section class="card span-12">
+        <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-swap"/></svg>Markets</h2><span id="markets-note" class="muted t-sm"></span></div>
+        <div id="markets" class="table-flat"><div class="skeleton"><div class="sk tall"></div><div class="sk tall"></div><div class="sk tall w-75"></div></div></div>
+      </section>
+
+      <section class="card span-8">
+        <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-gauge"/></svg>Capacity</h2></div>
+        <p class="card-note">What your channels hold to send and to receive, against what your plan needs. Quotes need both sides.</p>
+        <div id="capacity"><div class="skeleton"><div class="sk w-90"></div><div class="sk w-60"></div><div class="sk w-75"></div></div></div>
+      </section>
+
+      <section class="card span-4">
+        <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-clock"/></svg>Leases</h2></div>
+        <p class="card-note">Room to receive, rented from the Hydra liquidity service and renewed automatically.</p>
+        <div id="leases"><div class="skeleton"><div class="sk w-90"></div><div class="sk w-60"></div></div></div>
+      </section>
+
+      <section class="card span-8">
+        <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-book"/></svg>Recent trades</h2></div>
+        <div id="fills" class="table-scroll"><div class="skeleton"><div class="sk"></div><div class="sk"></div><div class="sk w-75"></div></div></div>
+      </section>
+
+      <div class="span-4 vstack">
+        <section class="card">
+          <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-wallet"/></svg>Node wallet</h2></div>
+          <p class="card-note">On-chain funds that are not in a channel yet.</p>
+          <div id="wallet"><div class="skeleton"><div class="sk w-75"></div><div class="sk w-60"></div></div></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-check-circle"/></svg>Health checks</h2>
+            <button id="doctor-recheck" class="btn btn-ghost btn-sm" type="button">Check again</button></div>
+          <ul id="doctor" class="list"><li><div class="skeleton grow"><div class="sk w-90"></div><div class="sk w-60"></div></div></li></ul>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== controls -->
+  <section id="tab-controls" class="view" hidden>
+    <div class="page-head"><div><h1 class="page-title">Controls</h1><p class="page-sub">Pause and resume quoting, and fine-tune each market.</p></div></div>
+
+    <section class="card">
+      <div class="master">
+        <div id="master-icon" class="master-icon"><svg class="i"><use href="#i-play"/></svg></div>
+        <div class="master-text">
+          <h2 id="master-title">Quoting</h2>
+          <p id="master-text" class="muted">Pausing takes every quote off the order book within seconds. Your funds stay in the channels.</p>
+        </div>
+        <div class="master-actions">
+          <button id="pause-all" class="btn btn-warn" type="button"><svg class="i i-sm"><use href="#i-pause"/></svg><span>Pause everything</span></button>
+          <button id="resume-all" class="btn btn-primary" type="button"><svg class="i i-sm"><use href="#i-play"/></svg><span>Resume everything</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-swap"/></svg>Markets</h2></div>
+      <ul id="market-switches" class="switch-list"><li><div class="skeleton grow"><div class="sk w-60"></div></div></li></ul>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-sliders"/></svg>Market settings</h2></div>
+      <p class="card-note">The bot applies a saved change within seconds and keeps the old file as a backup. A change the bot would refuse is not saved.</p>
+      <div id="ms-picker" class="segmented" role="radiogroup" aria-label="Market"></div>
+      <form id="ms-form" class="form-grid" novalidate></form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-send"/></svg>Alerts and lease renewals</h2></div>
+      <p class="card-note">These apply after the bot container restarts: run <code>docker compose restart bot</code> on the server.</p>
+      <form id="alerts-form" class="form-grid" novalidate></form>
+    </section>
+  </section>
+
+  <!-- ======================================================== volume -->
+  <section id="tab-volume" class="view" hidden>
+    <div class="page-head">
+      <div><h1 class="page-title">Volume</h1><p class="page-sub">A pre-launch test mode that creates trading volume on the DEX.</p></div>
+      <span class="pill pill-info no-dot">Pre-launch test</span>
+    </div>
+    <div class="callout callout-info">
+      <svg class="i"><use href="#i-info"/></svg>
+      <div>Your node trades with itself in small matched rounds. Nothing is bought from or sold to anyone else, and the only cost is the trading fees: about 0.07% on USDC/USDC, more on the BTC and ETH markets. While a run is active, the market maker of that market is paused.</div>
+    </div>
+    <div id="vol-unavailable" class="callout callout-warn" hidden></div>
+
+    <div id="vol-body" hidden>
+      <div class="kpis" id="vol-kpis"></div>
+      <section id="vol-running" class="card card-accent" hidden></section>
+      <div class="grid">
+        <section class="card span-5">
+          <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-play"/></svg>Run now</h2></div>
+          <div id="vol-last"></div>
+          <form id="vol-run-form" class="form-grid" novalidate>
+            <div class="field field-wide">
+              <label for="vol-market">Market</label>
+              <select id="vol-market"></select>
+            </div>
+            <div class="field field-wide">
+              <label for="vol-usd">Volume to create</label>
+              <div class="money-input"><span>$</span><input id="vol-usd" type="number" inputmode="decimal" min="1" step="10" value="100"></div>
+              <p class="help" id="vol-cost"></p>
+            </div>
+            <details class="field field-wide">
+              <summary class="muted t-sm">Advanced</summary>
+              <label class="field-label" for="vol-size">Largest round size (empty: the configured default)</label>
+              <input id="vol-size" type="number" inputmode="decimal" min="0" step="any">
+            </details>
+            <div class="actions"><button id="vol-start" class="btn btn-primary" type="submit">Start run</button></div>
+            <p id="vol-run-error" class="callout callout-bad field-wide" hidden></p>
+          </form>
+        </section>
+        <section class="card span-7">
+          <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-bars"/></svg>Today</h2><span class="muted t-sm">UTC day</span></div>
+          <div id="vol-today" class="table-flat"></div>
+        </section>
+        <section class="card span-12">
+          <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-clock"/></svg>Daily targets</h2></div>
+          <p class="card-note">With daily targets on, the volume service spreads each day's amount over short bursts.</p>
+          <form id="vol-cfg-form" novalidate></form>
+        </section>
+        <section class="card span-12">
+          <div class="card-head"><h2 class="card-title"><svg class="i"><use href="#i-trend"/></svg>Last 14 days</h2></div>
+          <div id="vol-history" class="table-scroll"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<dialog id="modal" class="modal" aria-labelledby="modal-title">
+  <form method="dialog" id="modal-form">
+    <h2 id="modal-title"></h2>
+    <div id="modal-body" class="modal-body"></div>
+    <div id="modal-type" class="field" hidden>
+      <label for="modal-type-input" id="modal-type-label"></label>
+      <input id="modal-type-input" type="text" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="modal-cancel" class="btn">Cancel</button>
+      <button type="submit" id="modal-ok" class="btn btn-primary">Confirm</button>
+    </div>
+  </form>
+</dialog>
+</body>
+</html>

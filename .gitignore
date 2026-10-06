@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+._*
+*.log
+# runtime data — never commit: wallet seed, channel state, API keys, configs, state
+easy/node/.env
+easy/node/config.yaml
+easy/node/config.yaml.bak*
+easy/node/data/
+easy/data/
+state/

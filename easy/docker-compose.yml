@@ -1,0 +1,35 @@
+# Easy mode: the Hydra node + the market maker (bot, alerts, Telegram control).
+#   ./install.sh            everything, first time (see README.md)
+#   docker compose up -d    start      |  docker compose down    stop (the bot cancels its quotes)
+#   ./hydra-mm <command>    doctor, setup, fund, status, pause, resume, volume, gui, ...
+# The node's API has no authentication: it is never published, only the bot container
+# (same compose network) reaches it. The web GUI is published on the HOST'S 127.0.0.1
+# only — open it through an SSH tunnel (`./hydra-mm gui` prints how).
+services:
+  node:
+    # Mainnet image per docs.hydranet.ai (production code, reduced logs). amd64 only —
+    # emulated on ARM (Apple Silicon, Raspberry Pi) its channel messages fail to decrypt.
+    image: ghcr.io/offchain-dex/hydra-app-public:latest
+    platform: linux/amd64
+    init: true
+    # LDK must flush at shutdown; a hard kill mid-flush can force-close every channel.
+    stop_grace_period: 120s
+    env_file: [./node/.env]               # MNEMONIC + PASSWORD = daemon mode, no prompts
+    volumes:
+      - ./node/config.yaml:/app/config.yaml:ro
+      - ./node/data:/root/.local/share    # wallet + channel state — survives updates
+    restart: unless-stopped
+
+  bot:
+    build: {context: .., dockerfile: easy/Dockerfile}
+    depends_on: [node]
+    stop_grace_period: 60s                # the bot cancels all its orders on SIGTERM
+    environment:
+      HYDRA_HOST: node
+      HYDRA_PORT: "5003"
+      HYDRA_GUI_PORT: ${HYDRA_GUI_PORT:-8080}       # only so `hydra-mm gui` prints the right link
+    ports:
+      - "127.0.0.1:${HYDRA_GUI_PORT:-8080}:8080"   # web GUI, this machine only (SSH tunnel)
+    volumes:
+      - ./data:/app/data                  # configs, state, logs, .env (API keys)
+    restart: unless-stopped

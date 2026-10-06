@@ -1,0 +1,95 @@
+# Hydra node config for easy mode — the official MAINNET template from
+# docs.hydranet.ai (Api → Setup Guide → Mainnet config.yaml). Every endpoint is public.
+# Changes from the template: only the tokens the market maker trades.
+settings:
+  data_path_name: hydra-app-mainnet      # keep mainnet state in its own directory
+  critical_db: &fjall_hot                # fund-critical data
+    type: fjall
+    compression: {type: zstd, preset: balanced}
+    cache_size_mb: 96
+    max_memtable_size_mb: 32
+    max_write_buffer_size_mb: 192
+    max_journaling_size_mb: 192
+    worker_threads: 4
+  db: *fjall_hot
+  archive_db:                            # cold settled history
+    type: fjall
+    compression: {type: zstd, preset: balanced}
+    cache_size_mb: 32
+    max_memtable_size_mb: 128
+    max_write_buffer_size_mb: 256
+    max_journaling_size_mb: 512
+    worker_threads: 2
+  server_port: 5003
+  metrics_port: 9090
+authentication_config:
+  auth_grpc_url: https://authentication-service.hydranet.app
+  auth_ws_url: wss://authentication-service-ws.hydranet.app
+proxy_url: https://hydra-proxy.hydranet.app
+# Server-side wallet backups: restore the channel state if the node's data folder is
+# lost (the seed alone only recovers the on-chain wallet). The docs call it optional
+# for high-volume liquidity providers (a little latency); for easy mode it stays on.
+backup_config:
+  grpc_url: https://backup-service.hydranet.app
+liquidity_config:
+  liquidity_url: https://liquidity-service.hydranet.app
+orderbook_config:
+  orderbook_url: https://orderbook.hydranet.app
+pricing_config:
+  price_oracle_url: https://price-oracle.hydranet.app
+  fiat_currencies: [USD]
+# Mainnet is invite-gated: needed to redeem an invite (or mint one) from this node.
+referral_config:
+  referral_service_url: https://referral-service.hydranet.app
+networks:
+  - protocol: bitcoin
+    network: bitcoin
+    blockchain:
+      type: electrum
+      urls: [wss://hydra-proxy.hydranet.app/electrum/mainnet/ws]
+      esplora_url: https://hydra-proxy.hydranet.app/esplora/mainnet
+      waterfalls_url: https://hydra-proxy.hydranet.app/waterfalls/mainnet
+      proxy_auth: true
+    lightning_tcp_port: 19735
+    lightning_ws_port: 19736
+    gossip_sync:
+      type: rgs
+      rgs_server_url: https://rapidsync.lightningdevkit.org
+    lightning:                           # channel terms in blocks, mirroring the hub
+      channel_handshake: {our_to_self_delay_blocks: 432}
+      channel_handshake_limits: {their_to_self_delay_blocks: 720}
+      invoice_route_hints: all           # hint public channels too, so payers find a route
+  - protocol: evm
+    network: ethereum
+    web3_provider: {url: "wss://hydra-proxy.hydranet.app/web3/ws/1", proxy_auth: true}
+    alchemy_rpc: {custom_url: "https://hydra-proxy.hydranet.app/alchemy/rpc/1", proxy_auth: true}
+    alchemy_ws: {custom_url: "wss://hydra-proxy.hydranet.app/alchemy/ws/1", proxy_auth: true}
+    lithium:
+      subgraph: {http_url: "https://index-api.onfinality.io/sq/7446948102396997632/ethereum"}
+      contract_address: "0xcc4c47cf0175AA8108e78679c2586A0a6abb242a"
+      contract_deploy_block: 25667649
+      tcp_quic_port: 29980
+      ws_port: 29981
+      channel_handshake: {dispute_period_secs: 172800}
+      channel_handshake_limits: {max_dispute_period_secs: 432000}
+    watchtowers:
+      - "0x53f1067c4d85000f24d8019b8d676fbf7f321ca3@wss://ethereum-ws.hydranet.app:443"
+    tokens:
+      - "erc20:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"   # USDC
+  - protocol: evm
+    network: arbitrum
+    web3_provider: {url: "wss://hydra-proxy.hydranet.app/web3/ws/42161", proxy_auth: true}
+    alchemy_rpc: {custom_url: "https://hydra-proxy.hydranet.app/alchemy/rpc/42161", proxy_auth: true}
+    alchemy_ws: {custom_url: "wss://hydra-proxy.hydranet.app/alchemy/ws/42161", proxy_auth: true}
+    lithium:
+      subgraph: {http_url: "https://index-api.onfinality.io/sq/7446948102396997632/arbitrum"}
+      contract_address: "0x895090D931660fbFc5F6bDEdC24A87dD3D64202D"
+      contract_deploy_block: 490348527
+      tcp_quic_port: 29982
+      ws_port: 29983
+      channel_handshake: {dispute_period_secs: 172800}
+      channel_handshake_limits: {max_dispute_period_secs: 432000}
+    watchtowers:
+      - "0x53f1067c4d85000f24d8019b8d676fbf7f321ca3@wss://arbitrum-ws.hydranet.app:443"
+    tokens:
+      - "erc20:0xaf88d065e77c8cC2239327C5EDb3A432268e5831"   # USDC

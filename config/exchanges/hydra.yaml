@@ -1,0 +1,194 @@
+# Hydra DEX Exchange Configuration — MAINNET
+#
+# ⚠️  REAL FUNDS. Every order placed against this config uses mainnet liquidity.
+#
+# Network IDs (this node's accepted values — confirmed via GetNetworks RPC):
+#   - Bitcoin mainnet:   "f9beb4d9"  (magic bytes 0xF9BEB4D9 in lowercase hex)
+#   - Ethereum mainnet:  "1"          (EIP-155 chain id)
+#   - Arbitrum One:      "42161"      (EIP-155 chain id)
+# Protocol: 1=PROTOCOL_BITCOIN, 2=PROTOCOL_EVM
+name: "hydra"
+type: "HydraExchange"
+enabled: true
+
+# Connection settings (override via HYDRA_HOST / HYDRA_PORT in .env)
+host: "${HYDRA_HOST}"
+port: "${HYDRA_PORT}"
+
+trading_pairs:
+  # =====================================================================
+  # Market-maker markets (strategies/market_maker.py)
+  #   USDC.arb = native USDC on Arbitrum One (0xaf88...)
+  #   USDC.eth = USDC on Ethereum mainnet    (0xa0b8...)
+  # =====================================================================
+  - base_symbol: "BTC"
+    quote_symbol: "USDC.arb"
+    enabled: true
+    base:
+      protocol: 1  # Bitcoin mainnet
+      network_id: "f9beb4d9"
+      asset_id: "0x0000000000000000000000000000000000000000000000000000000000000000"
+    quote:
+      protocol: 2  # Arbitrum One — Circle native USDC
+      network_id: "42161"
+      asset_id: "ERC20:0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+
+  - base_symbol: "USDC.arb"
+    quote_symbol: "USDC.eth"
+    enabled: true
+    base:
+      protocol: 2  # Arbitrum One — Circle native USDC
+      network_id: "42161"
+      asset_id: "ERC20:0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+    quote:
+      protocol: 2  # Ethereum mainnet — Circle USDC
+      network_id: "1"
+      asset_id: "ERC20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+
+  - base_symbol: "ETH"
+    quote_symbol: "USDC.arb"
+    enabled: true
+    base:
+      protocol: 2  # Ethereum mainnet — native ETH
+      network_id: "1"
+      asset_id: "0x0000000000000000000000000000000000000000"
+    quote:
+      protocol: 2  # Arbitrum One — Circle native USDC
+      network_id: "42161"
+      asset_id: "ERC20:0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+
+  - base_symbol: "HDN"
+    quote_symbol: "USDC.arb"
+    enabled: true
+    base:
+      protocol: 2  # Arbitrum One — Hydranet HDN
+      network_id: "42161"
+      asset_id: "ERC20:0xb0f66bdb39acbb043308eb9dbe78f5bb47ea5430"
+    quote:
+      protocol: 2  # Arbitrum One — Circle native USDC
+      network_id: "42161"
+      asset_id: "ERC20:0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+
+  # =====================================================================
+  # PRIMARY: ETH / BTC — Ethereum mainnet base, Bitcoin mainnet quote
+  #   ETH: native ETH on Ethereum mainnet
+  #   BTC: native BTC on Bitcoin mainnet
+  # Cross-chain pair (Ethereum ↔ Bitcoin), routed via HTLC.
+  # Quoted BTC-per-ETH: price 0.0314 means 1 ETH = 0.0314 BTC.
+  # Live MarketInfo: min_base 0.0001 ETH, min_quote 0.00001 BTC,
+  #                  precision base 6 / quote 7, taker 0.4%, maker -0.1%.
+  # =====================================================================
+  - base_symbol: "ETH"
+    quote_symbol: "BTC"
+    enabled: true
+    base:
+      protocol: 2  # Ethereum mainnet — native ETH
+      network_id: "1"
+      asset_id: "0x0000000000000000000000000000000000000000"
+    quote:
+      protocol: 1  # Bitcoin mainnet
+      network_id: "f9beb4d9"
+      asset_id: "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+  # =====================================================================
+  # HDN / USDT on Arbitrum One — same chain, no HTLC, no bridging
+  # =====================================================================
+  - base_symbol: "HDN"
+    quote_symbol: "USDT"
+    enabled: true
+    base:
+      protocol: 2  # Arbitrum One — Hydranet HDN
+      network_id: "42161"
+      # https://arbiscan.io/token/0xb0f66bdb39acbb043308eb9dbe78f5bb47ea5430
+      asset_id: "ERC20:0xb0f66bdb39acbb043308eb9dbe78f5bb47ea5430"
+    quote:
+      protocol: 2  # Arbitrum One — Tether USDT (USDT0)
+      network_id: "42161"
+      # https://arbiscan.io/token/0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9
+      asset_id: "ERC20:0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+
+  # =====================================================================
+  # BTC / USDT — Bitcoin mainnet base, USDT (Arbitrum One) quote
+  #   BTC:  native Bitcoin
+  #   USDT: 0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9  (Arbitrum One — USDT0)
+  # Cross-chain pair (Bitcoin ↔ Arbitrum), routed via HTLC.
+  # =====================================================================
+  - base_symbol: "BTC"
+    quote_symbol: "USDT"
+    enabled: true
+    base:
+      protocol: 1  # Bitcoin mainnet
+      network_id: "f9beb4d9"
+      asset_id: "0x0000000000000000000000000000000000000000000000000000000000000000"
+    quote:
+      protocol: 2  # Arbitrum One — Tether USDT
+      network_id: "42161"
+      asset_id: "ERC20:0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+
+  # ---------------------------------------------------------------------
+  # Other pairs the connector knows about — strategies are disabled in
+  # bot_config.yaml; these are kept so future strategies can target them
+  # without re-editing this file.
+  # ---------------------------------------------------------------------
+  - base_symbol: "BTC"
+    quote_symbol: "USDC"
+    enabled: true
+    base:
+      protocol: 1  # Bitcoin mainnet
+      network_id: "f9beb4d9"
+      asset_id: "0x0000000000000000000000000000000000000000000000000000000000000000"
+    quote:
+      protocol: 2  # Ethereum mainnet — Circle USDC
+      network_id: "1"
+      asset_id: "ERC20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+
+  - base_symbol: "ETH"
+    quote_symbol: "USDC"
+    enabled: true
+    base:
+      protocol: 2  # Ethereum mainnet — native ETH
+      network_id: "1"
+      asset_id: "0x0000000000000000000000000000000000000000"
+    quote:
+      protocol: 2  # Ethereum mainnet — Circle USDC
+      network_id: "1"
+      asset_id: "ERC20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+
+  - base_symbol: "HDN"
+    quote_symbol: "USDC"
+    enabled: true
+    base:
+      protocol: 2  # Arbitrum One — HDN
+      network_id: "42161"
+      asset_id: "ERC20:0xb0f66bdb39acbb043308eb9dbe78f5bb47ea5430"
+    quote:
+      protocol: 2  # Ethereum mainnet — Circle USDC (cross-chain)
+      network_id: "1"
+      asset_id: "ERC20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+
+  - base_symbol: "HDN"
+    quote_symbol: "USDC.e"  # bridged USDC on Arbitrum (same-chain alternative)
+    enabled: true
+    base:
+      protocol: 2  # Arbitrum One — HDN
+      network_id: "42161"
+      asset_id: "ERC20:0xb0f66bdb39acbb043308eb9dbe78f5bb47ea5430"
+    quote:
+      protocol: 2  # Arbitrum One — Circle native USDC
+      network_id: "42161"
+      asset_id: "ERC20:0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+
+  - base_symbol: "HDN"
+    quote_symbol: "BTC"
+    enabled: true
+    base:
+      protocol: 2  # Arbitrum One — HDN
+      network_id: "42161"
+      asset_id: "ERC20:0xb0f66bdb39acbb043308eb9dbe78f5bb47ea5430"
+    quote:
+      protocol: 1  # Bitcoin mainnet
+      network_id: "f9beb4d9"
+      asset_id: "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+trading_fees:
+  default: 0.001

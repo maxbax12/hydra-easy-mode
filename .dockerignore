@@ -1,0 +1,7 @@
+.git
+**/__pycache__
+*.log
+state
+.env
+easy/node
+easy/data
